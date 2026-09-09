@@ -7,23 +7,23 @@ import sharp from 'sharp';
 const THEMES = {
   'github-dark': {
     bg: '#161b22',
-    key: '#ffa657',
-    val: '#a5d6ff',
-    sep: '#616e7f',
-    add: '#3fb950',
-    del: '#f85149',
-    ascii: '#c9d1d9',
-    text: '#c9d1d9'
+    key: '#0000FF',
+    val: '#0000FF',
+    sep: '#0000FF',
+    add: '#0000FF',
+    del: '#0000FF',
+    ascii: '#0000FF',
+    text: '#0000FF'
   },
   'github-light': {
     bg: '#f6f8fa',
-    key: '#953800',
-    val: '#0a3069',
-    sep: '#c2cfde',
-    add: '#1a7f37',
-    del: '#cf222e',
-    ascii: '#24292f',
-    text: '#24292f'
+    key: '#0000FF',
+    val: '#0000FF',
+    sep: '#0000FF',
+    add: '#0000FF',
+    del: '#0000FF',
+    ascii: '#0000FF',
+    text: '#0000FF'
   }
 };
 
@@ -291,7 +291,7 @@ async function avatarToAscii(avatarUrl, maxHeight = 25, maxWidth = 38, respectTr
 
 // Default ASCII art (fallback)
 // Empty ASCII fallback (38 chars x 25 lines)
-const DEFAULT_ASCII = Array(25).fill(' '.repeat(38));
+const DEFAULT_ASCII = Array(25).fill('3'.repeat(38));
 
 // Constants for alignment (same as client-side)
 const ROW_CHAR_LENGTH = 60;
@@ -1077,6 +1077,8 @@ export default async function handler(req, res) {
     // Convert image to ASCII art, fall back to default if it fails
     let asciiArt = DEFAULT_ASCII;
     let isCustomAscii = false;
+    // Bypassing avatarToAscii to force custom "3" ascii
+    /*
     if (imageUrl) {
       const converted = await avatarToAscii(imageUrl, 25, 38, respectTransparency, useColoredAscii, imageScale, removeBackground, imageOffsetX, imageOffsetY);
       if (converted) {
@@ -1084,6 +1086,7 @@ export default async function handler(req, res) {
         isCustomAscii = true;
       }
     }
+    */
 
     const svg = generateSvgWithConfig(data, config, asciiArt, isCustomAscii, theme);
 
