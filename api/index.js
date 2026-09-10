@@ -397,20 +397,42 @@ import fs from 'fs';
 import path from 'path';
 
 async function getBirdStats(apiKey) {
+  if (!apiKey) {
+    return {
+      stat1: 'Bird stats unavailable (no API key configured).',
+      notableTitle: '',
+      rareBirds: []
+    };
+  }
+
   const regionCode = 'CA-QC-MR';
-  const url = `https://api.ebird.org/v2/data/obs/${regionCode}/recent?back=2`;
+  const url = `https://api.ebird.org/v2/data/obs/${regionCode}/recent?back=3`;
   const headers = { 'x-ebirdapitoken': apiKey };
 
   try {
     const response = await fetch(url, { headers });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error('eBird API error:', response.status, await response.text());
+      return null;
+    }
     const observations = await response.json();
 
+    // Use Montreal local time (Eastern: UTC-4 in summer, UTC-5 in winter)
+    // Approximate: UTC offset for Eastern Time
     const now = new Date();
-    if (now.getHours() < 8) {
-      now.setDate(now.getDate() - 1);
-    }
-    const targetDateStr = now.toISOString().split('T')[0];
+    const easternOffsetMs = 4 * 60 * 60 * 1000; // UTC-4 (EDT)
+    const easternNow = new Date(now.getTime() - easternOffsetMs);
+    const todayStr = easternNow.toISOString().split('T')[0];
+
+    // Find the most recent date with actual observations (today or yesterday)
+    // This handles the case where eBird data hasn't been posted for today yet
+    const availableDates = [...new Set(
+      observations.map(obs => (obs.obsDt || '').split(' ')[0]).filter(Boolean)
+    )].sort().reverse();
+
+    const targetDateStr = availableDates.includes(todayStr)
+      ? todayStr
+      : (availableDates[0] || todayStr);
 
     let maxCount = 0;
     let mostFrequentBird = null;
@@ -426,12 +448,13 @@ async function getBirdStats(apiKey) {
       }
     }
 
+    const displayDate = targetDateStr === todayStr ? todayStr : `${targetDateStr} (latest available)`;
     let birdStat1 = mostFrequentBird
-      ? `Montreal bird stats on ${targetDateStr}: Most freq. bird is: ${mostFrequentBird} (Count: ${maxCount})`
-      : `Montreal bird stats on ${targetDateStr}: Probably a pigeon.`;
+      ? `Montreal birds on ${displayDate}: Most seen: ${mostFrequentBird} (x${maxCount})`
+      : `Montreal birds on ${displayDate}: Probably a pigeon.`;
 
     // Notable birds
-    const notableUrl = `https://api.ebird.org/v2/data/obs/${regionCode}/recent/notable?back=2`;
+    const notableUrl = `https://api.ebird.org/v2/data/obs/${regionCode}/recent/notable?back=3`;
     const notableResponse = await fetch(notableUrl, { headers });
     let rareBirdsLines = [];
 
@@ -450,9 +473,24 @@ async function getBirdStats(apiKey) {
           }
         }
       }
+
+      // If no notable birds for target date, check any from the last 3 days
+      if (rareBirdsLines.length === 0 && notableObservations.length > 0) {
+        const seen = new Set();
+        for (const obs of notableObservations) {
+          const speciesName = obs.comName;
+          if (speciesName && !seen.has(speciesName)) {
+            seen.add(speciesName);
+            rareBirdsLines.push(`${rareBirdsLines.length + 1}. ${speciesName} (recent)`);
+            if (rareBirdsLines.length >= 3) break;
+          }
+        }
+      }
     }
 
-    let notableTitle = rareBirdsLines.length > 0 ? "Notable birds:" : `No notable/rare birds reported in Montreal on ${targetDateStr}.`;
+    const notableTitle = rareBirdsLines.length > 0
+      ? 'Notable birds nearby:'
+      : `No rare birds reported in Montreal recently.`;
 
     return {
       stat1: birdStat1,
