@@ -304,7 +304,7 @@ function escapeXml(str) {
     .replace(/'/g, '&apos;');
 }
 
-function generateSimpleSvg(asciiArt, theme = 'github-dark') {
+function generateSimpleSvg(asciiArt, theme = 'github-dark', birdStats = null) {
   const colors = THEMES[theme] || THEMES['github-dark'];
   
   // Center ascii
@@ -353,8 +353,26 @@ function generateSimpleSvg(asciiArt, theme = 'github-dark') {
     }).join('\n');
   }
 
+  let birdSvg = '';
+  let svgHeight = 600;
+  if (birdStats) {
+    svgHeight = 750;
+    birdSvg = `
+<text x="${xCenter}" y="590" fill="${colors.text}" text-anchor="middle" font-size="16px">
+${escapeXml(birdStats.stat1)}
+</text>
+<text x="${xCenter}" y="620" fill="${colors.text}" text-anchor="middle" font-size="16px">
+${escapeXml(birdStats.notableTitle)}
+</text>`;
+    if (birdStats.rareBirds && birdStats.rareBirds.length > 0) {
+      birdStats.rareBirds.forEach((bird, i) => {
+        birdSvg += `\n<text x="${xCenter}" y="${650 + (i * 20)}" fill="${colors.text}" text-anchor="middle" font-size="14px">\n${escapeXml(bird)}\n</text>`;
+      });
+    }
+  }
+
   const svg = `<?xml version='1.0' encoding='UTF-8'?>
-<svg xmlns="http://www.w3.org/2000/svg" font-family="Consolas,Monaco,monospace" width="985px" height="600px" font-size="16px">
+<svg xmlns="http://www.w3.org/2000/svg" font-family="Consolas,Monaco,monospace" width="985px" height="${svgHeight}px" font-size="16px">
 <style>
 @font-face {
   src: local('Consolas'), local('Monaco'), local('monospace');
@@ -363,13 +381,13 @@ function generateSimpleSvg(asciiArt, theme = 'github-dark') {
 }
 text, tspan { white-space: pre; }
 </style>
-<rect width="985px" height="600px" fill="${colors.bg}" rx="15"/>
+<rect width="985px" height="${svgHeight}px" fill="${colors.bg}" rx="15"/>
 <text x="${xCenter}" y="100" fill="${colors.ascii}"${textAnchor}>
 ${asciiLines}
 </text>
 <text x="${xCenter}" y="550" fill="${colors.text}" text-anchor="middle" font-size="20px">
 Artist: Bato Dugarzhapov
-</text>
+</text>${birdSvg}
 </svg>`;
 
   return svg;
@@ -377,6 +395,75 @@ Artist: Bato Dugarzhapov
 
 import fs from 'fs';
 import path from 'path';
+
+async function getBirdStats(apiKey) {
+    const regionCode = 'CA-QC-MR';
+    const url = `https://api.ebird.org/v2/data/obs/${regionCode}/recent?back=2`;
+    const headers = { 'x-ebirdapitoken': apiKey };
+    
+    try {
+        const response = await fetch(url, { headers });
+        if (!response.ok) return null;
+        const observations = await response.json();
+        
+        const now = new Date();
+        if (now.getHours() < 8) {
+            now.setDate(now.getDate() - 1);
+        }
+        const targetDateStr = now.toISOString().split('T')[0];
+        
+        let maxCount = 0;
+        let mostFrequentBird = null;
+        
+        for (const obs of observations) {
+            const obsDate = obs.obsDt || '';
+            if (obsDate.startsWith(targetDateStr)) {
+                const count = obs.howMany || 0;
+                if (count > maxCount) {
+                    maxCount = count;
+                    mostFrequentBird = obs.comName || 'Unknown Bird';
+                }
+            }
+        }
+        
+        let birdStat1 = mostFrequentBird 
+            ? `Montreal bird stats on ${targetDateStr}: Most freq. bird is: ${mostFrequentBird} (Count: ${maxCount})`
+            : `Montreal bird stats on ${targetDateStr}: Probably a pigeon.`;
+            
+        // Notable birds
+        const notableUrl = `https://api.ebird.org/v2/data/obs/${regionCode}/recent/notable?back=2`;
+        const notableResponse = await fetch(notableUrl, { headers });
+        let rareBirdsLines = [];
+        
+        if (notableResponse.ok) {
+            const notableObservations = await notableResponse.json();
+            const rareBirds = new Set();
+            
+            for (const obs of notableObservations) {
+                const obsDate = obs.obsDt || '';
+                if (obsDate.startsWith(targetDateStr)) {
+                    const speciesName = obs.comName;
+                    if (speciesName && !rareBirds.has(speciesName)) {
+                        rareBirds.add(speciesName);
+                        rareBirdsLines.push(`${rareBirdsLines.length + 1}. ${speciesName}`);
+                        if (rareBirdsLines.length >= 3) break;
+                    }
+                }
+            }
+        }
+        
+        let notableTitle = rareBirdsLines.length > 0 ? "Notable birds:" : `No notable/rare birds reported in Montreal on ${targetDateStr}.`;
+        
+        return {
+            stat1: birdStat1,
+            notableTitle: notableTitle,
+            rareBirds: rareBirdsLines
+        };
+    } catch (e) {
+        console.error('Bird stats error:', e);
+        return null;
+    }
+}
 
 // Vercel serverless handler
 export default async function handler(req, res) {
@@ -408,7 +495,11 @@ export default async function handler(req, res) {
       throw new Error('Failed to generate ASCII art');
     }
 
-    const svg = generateSimpleSvg(asciiArt, theme);
+    // Fetch bird stats
+    const EBIRD_API_KEY = '455b9bc8-be44-443f-96a3-6b7631ab7dfa';
+    const birdStats = await getBirdStats(EBIRD_API_KEY);
+
+    const svg = generateSimpleSvg(asciiArt, theme, birdStats);
 
     // Disable caching to change image on every load
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -420,4 +511,5 @@ export default async function handler(req, res) {
     res.status(500).json({ error: error.message });
   }
 }
+
 
