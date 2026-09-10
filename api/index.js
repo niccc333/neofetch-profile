@@ -28,7 +28,7 @@ const THEMES = {
 };
 
 // ASCII character set for image conversion (light to dark)
-const ASCII_CHARS = ' .`"^-+*o()[]{}?#%@M';
+const ASCII_CHARS = ' .`"^-+*o3)[]{}?#%@M';
 
 // Convert RGB to hex color
 function rgbToHex(r, g, b) {
@@ -57,7 +57,7 @@ function parseOffset(value, dimension) {
 }
 
 // Convert avatar image to ASCII art
-// Pipeline: Load -> Contain -> Scale -> Offset -> ASCII -> Crop
+// Pipeline: Load, Contain,  Scale, Offset, ASCII, Crop
 async function avatarToAscii(avatarUrl, maxHeight = 25, maxWidth = 38, respectTransparency = false, colored = false, imageScale = 1, removeBackground = false, offsetX = 0, offsetY = 0) {
   const gridWidth = maxWidth;
   const gridHeight = maxHeight;
@@ -306,7 +306,7 @@ function escapeXml(str) {
 
 function generateSimpleSvg(asciiArt, theme = 'github-dark', birdStats = null) {
   const colors = THEMES[theme] || THEMES['github-dark'];
-  
+
   // Center ascii
   const xCenter = 492;
   const textAnchor = ' text-anchor="middle"';
@@ -386,7 +386,7 @@ text, tspan { white-space: pre; }
 ${asciiLines}
 </text>
 <text x="${xCenter}" y="550" fill="${colors.text}" text-anchor="middle" font-size="20px">
-Artist: Bato Dugarzhapov
+Artist: Бато Дугаржапов
 </text>${birdSvg}
 </svg>`;
 
@@ -397,72 +397,72 @@ import fs from 'fs';
 import path from 'path';
 
 async function getBirdStats(apiKey) {
-    const regionCode = 'CA-QC-MR';
-    const url = `https://api.ebird.org/v2/data/obs/${regionCode}/recent?back=2`;
-    const headers = { 'x-ebirdapitoken': apiKey };
-    
-    try {
-        const response = await fetch(url, { headers });
-        if (!response.ok) return null;
-        const observations = await response.json();
-        
-        const now = new Date();
-        if (now.getHours() < 8) {
-            now.setDate(now.getDate() - 1);
-        }
-        const targetDateStr = now.toISOString().split('T')[0];
-        
-        let maxCount = 0;
-        let mostFrequentBird = null;
-        
-        for (const obs of observations) {
-            const obsDate = obs.obsDt || '';
-            if (obsDate.startsWith(targetDateStr)) {
-                const count = obs.howMany || 0;
-                if (count > maxCount) {
-                    maxCount = count;
-                    mostFrequentBird = obs.comName || 'Unknown Bird';
-                }
-            }
-        }
-        
-        let birdStat1 = mostFrequentBird 
-            ? `Montreal bird stats on ${targetDateStr}: Most freq. bird is: ${mostFrequentBird} (Count: ${maxCount})`
-            : `Montreal bird stats on ${targetDateStr}: Probably a pigeon.`;
-            
-        // Notable birds
-        const notableUrl = `https://api.ebird.org/v2/data/obs/${regionCode}/recent/notable?back=2`;
-        const notableResponse = await fetch(notableUrl, { headers });
-        let rareBirdsLines = [];
-        
-        if (notableResponse.ok) {
-            const notableObservations = await notableResponse.json();
-            const rareBirds = new Set();
-            
-            for (const obs of notableObservations) {
-                const obsDate = obs.obsDt || '';
-                if (obsDate.startsWith(targetDateStr)) {
-                    const speciesName = obs.comName;
-                    if (speciesName && !rareBirds.has(speciesName)) {
-                        rareBirds.add(speciesName);
-                        rareBirdsLines.push(`${rareBirdsLines.length + 1}. ${speciesName}`);
-                        if (rareBirdsLines.length >= 3) break;
-                    }
-                }
-            }
-        }
-        
-        let notableTitle = rareBirdsLines.length > 0 ? "Notable birds:" : `No notable/rare birds reported in Montreal on ${targetDateStr}.`;
-        
-        return {
-            stat1: birdStat1,
-            notableTitle: notableTitle,
-            rareBirds: rareBirdsLines
-        };
-    } catch (e) {
-        console.error('Bird stats error:', e);
-        return null;
+  const regionCode = 'CA-QC-MR';
+  const url = `https://api.ebird.org/v2/data/obs/${regionCode}/recent?back=2`;
+  const headers = { 'x-ebirdapitoken': apiKey };
+
+  try {
+    const response = await fetch(url, { headers });
+    if (!response.ok) return null;
+    const observations = await response.json();
+
+    const now = new Date();
+    if (now.getHours() < 8) {
+      now.setDate(now.getDate() - 1);
     }
+    const targetDateStr = now.toISOString().split('T')[0];
+
+    let maxCount = 0;
+    let mostFrequentBird = null;
+
+    for (const obs of observations) {
+      const obsDate = obs.obsDt || '';
+      if (obsDate.startsWith(targetDateStr)) {
+        const count = obs.howMany || 0;
+        if (count > maxCount) {
+          maxCount = count;
+          mostFrequentBird = obs.comName || 'Unknown Bird';
+        }
+      }
+    }
+
+    let birdStat1 = mostFrequentBird
+      ? `Montreal bird stats on ${targetDateStr}: Most freq. bird is: ${mostFrequentBird} (Count: ${maxCount})`
+      : `Montreal bird stats on ${targetDateStr}: Probably a pigeon.`;
+
+    // Notable birds
+    const notableUrl = `https://api.ebird.org/v2/data/obs/${regionCode}/recent/notable?back=2`;
+    const notableResponse = await fetch(notableUrl, { headers });
+    let rareBirdsLines = [];
+
+    if (notableResponse.ok) {
+      const notableObservations = await notableResponse.json();
+      const rareBirds = new Set();
+
+      for (const obs of notableObservations) {
+        const obsDate = obs.obsDt || '';
+        if (obsDate.startsWith(targetDateStr)) {
+          const speciesName = obs.comName;
+          if (speciesName && !rareBirds.has(speciesName)) {
+            rareBirds.add(speciesName);
+            rareBirdsLines.push(`${rareBirdsLines.length + 1}. ${speciesName}`);
+            if (rareBirdsLines.length >= 3) break;
+          }
+        }
+      }
+    }
+
+    let notableTitle = rareBirdsLines.length > 0 ? "Notable birds:" : `No notable/rare birds reported in Montreal on ${targetDateStr}.`;
+
+    return {
+      stat1: birdStat1,
+      notableTitle: notableTitle,
+      rareBirds: rareBirdsLines
+    };
+  } catch (e) {
+    console.error('Bird stats error:', e);
+    return null;
+  }
 }
 
 // Vercel serverless handler
@@ -471,15 +471,15 @@ export default async function handler(req, res) {
 
   try {
     const slideshowDir = path.join(process.cwd(), 'Slideshow');
-    
+
     if (!fs.existsSync(slideshowDir)) {
       throw new Error('Slideshow directory not found at ' + slideshowDir);
     }
-    
+
     const files = fs.readdirSync(slideshowDir).filter(f => f.match(/\.(jpg|jpeg|png|gif|webp|avif)$/i));
-    
+
     if (files.length === 0) {
-       throw new Error('No images found in slideshow folder');
+      throw new Error('No images found in slideshow folder');
     }
 
     // Select a random image every time
@@ -496,7 +496,7 @@ export default async function handler(req, res) {
     }
 
     // Fetch bird stats
-    const EBIRD_API_KEY = '455b9bc8-be44-443f-96a3-6b7631ab7dfa';
+    const EBIRD_API_KEY = process.env.EBIRD_API_KEY;
     const birdStats = await getBirdStats(EBIRD_API_KEY);
 
     const svg = generateSimpleSvg(asciiArt, theme, birdStats);
