@@ -383,7 +383,7 @@ export default async function handler(req, res) {
   const { theme = 'github-dark' } = req.query;
 
   try {
-    const slideshowDir = path.join(process.cwd(), 'slideshow');
+    const slideshowDir = path.join(process.cwd(), 'Slideshow');
     
     if (!fs.existsSync(slideshowDir)) {
       throw new Error('Slideshow directory not found at ' + slideshowDir);
