@@ -395,11 +395,9 @@ export default async function handler(req, res) {
        throw new Error('No images found in slideshow folder');
     }
 
-    // Select image based on current day
-    const day = Math.floor(Date.now() / 86400000);
-    // Sort files to ensure consistent order across deployments
-    files.sort();
-    const selectedFile = files[day % files.length];
+    // Select a random image every time
+    const randomIndex = Math.floor(Math.random() * files.length);
+    const selectedFile = files[randomIndex];
     const imagePath = path.join(slideshowDir, selectedFile);
 
     // Generate ASCII
@@ -412,8 +410,10 @@ export default async function handler(req, res) {
 
     const svg = generateSimpleSvg(asciiArt, theme);
 
-    // Set cache headers (cache for 4 hours, stale-while-revalidate for 24 hours)
-    res.setHeader('Cache-Control', 'public, max-age=14400, s-maxage=14400, stale-while-revalidate=86400');
+    // Disable caching to change image on every load
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.setHeader('Content-Type', 'image/svg+xml');
     res.status(200).send(svg);
   } catch (error) {
