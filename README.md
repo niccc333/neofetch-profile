@@ -587,6 +587,8 @@ http://localhost:3000/api?username=YOUR_USERNAME&config=http://localhost:3000/co
 
 ## Credits
 
+Andrew K is the goat respect to him
+
 This project is inspired by [**Andrew Grant's GitHub Profile**](https://github.com/Andrew6rant) — the original neofetch-style GitHub profile that started it all. Check out his amazing work!
 
 Also inspired by:

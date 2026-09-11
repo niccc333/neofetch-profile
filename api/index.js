@@ -450,8 +450,8 @@ async function getBirdStats(apiKey) {
 
     const displayDate = targetDateStr === todayStr ? todayStr : `${targetDateStr} (latest available)`;
     let birdStat1 = mostFrequentBird
-      ? `Montreal birds on ${displayDate}: Most seen: ${mostFrequentBird} (x${maxCount})`
-      : `Montreal birds on ${displayDate}: Probably a pigeon.`;
+      ? `Montreal birds on ${displayDate}:\nMost seen: ${mostFrequentBird} (x${maxCount})`
+      : `Montreal birds on ${displayDate}:\nProbably a pigeon.`;
 
     // Notable birds
     const notableUrl = `https://api.ebird.org/v2/data/obs/${regionCode}/recent/notable?back=3`;
