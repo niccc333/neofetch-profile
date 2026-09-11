@@ -358,15 +358,18 @@ function generateSimpleSvg(asciiArt, theme = 'github-dark', birdStats = null) {
   if (birdStats) {
     svgHeight = 750;
     birdSvg = `
-<text x="${xCenter}" y="590" fill="${colors.text}" text-anchor="middle" font-size="16px">
+<text x="${xCenter}" y="590" fill="${colors.text}" text-anchor="middle" font-size="16px" font-weight="bold">
+${escapeXml(birdStats.title)}
+</text>
+<text x="${xCenter}" y="615" fill="${colors.text}" text-anchor="middle" font-size="16px">
 ${escapeXml(birdStats.stat1)}
 </text>
-<text x="${xCenter}" y="620" fill="${colors.text}" text-anchor="middle" font-size="16px">
+<text x="${xCenter}" y="645" fill="${colors.text}" text-anchor="middle" font-size="16px">
 ${escapeXml(birdStats.notableTitle)}
 </text>`;
     if (birdStats.rareBirds && birdStats.rareBirds.length > 0) {
       birdStats.rareBirds.forEach((bird, i) => {
-        birdSvg += `\n<text x="${xCenter}" y="${650 + (i * 20)}" fill="${colors.text}" text-anchor="middle" font-size="14px">\n${escapeXml(bird)}\n</text>`;
+        birdSvg += `\n<text x="${xCenter}" y="${670 + (i * 20)}" fill="${colors.text}" text-anchor="middle" font-size="14px">\n${escapeXml(bird)}\n</text>`;
       });
     }
   }
@@ -399,7 +402,8 @@ import path from 'path';
 async function getBirdStats(apiKey) {
   if (!apiKey) {
     return {
-      stat1: 'Bird stats unavailable (no API key configured).',
+      title: 'Montreal bird stats unavailable:',
+      stat1: 'No API key configured.',
       notableTitle: '',
       rareBirds: []
     };
@@ -449,9 +453,10 @@ async function getBirdStats(apiKey) {
     }
 
     const displayDate = targetDateStr === todayStr ? todayStr : `${targetDateStr} (latest available)`;
+    let birdStatTitle = `Montreal bird stats on ${displayDate}:`;
     let birdStat1 = mostFrequentBird
-      ? `Montreal birds stats on ${displayDate}:\nMost seen: ${mostFrequentBird} (x${maxCount})`
-      : `Montreal birds stats on ${displayDate}:\nProbably a pigeon.`;
+      ? `Most seen: ${mostFrequentBird} (x${maxCount})`
+      : `Probably a pigeon.`;
 
     // Notable birds
     const notableUrl = `https://api.ebird.org/v2/data/obs/${regionCode}/recent/notable?back=3`;
@@ -493,6 +498,7 @@ async function getBirdStats(apiKey) {
       : `No rare birds reported in Montreal recently.`;
 
     return {
+      title: birdStatTitle,
       stat1: birdStat1,
       notableTitle: notableTitle,
       rareBirds: rareBirdsLines
