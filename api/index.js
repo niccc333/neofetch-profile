@@ -452,7 +452,7 @@ async function getBirdStats(apiKey) {
       }
     }
 
-    const displayDate = targetDateStr === todayStr ? todayStr : `${targetDateStr} (latest available)`;
+    const displayDate = targetDateStr === todayStr ? todayStr : `${targetDateStr}`;
     let birdStatTitle = `Montreal bird stats on ${displayDate}:`;
     let birdStat1 = mostFrequentBird
       ? `Most seen: ${mostFrequentBird} (x${maxCount})`
