@@ -486,7 +486,7 @@ async function getBirdStats(apiKey) {
           const speciesName = obs.comName;
           if (speciesName && !seen.has(speciesName)) {
             seen.add(speciesName);
-            rareBirdsLines.push(`${rareBirdsLines.length + 1}. ${speciesName} (recent)`);
+            rareBirdsLines.push(`${rareBirdsLines.length + 1}. ${speciesName}`);
             if (rareBirdsLines.length >= 3) break;
           }
         }
