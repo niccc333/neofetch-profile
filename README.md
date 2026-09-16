@@ -56,6 +56,9 @@ Add this to your GitHub profile README:
 
 Replace `YOUR_USERNAME` with your GitHub username. That's it!
 
+By default the card automatically matches the viewer's theme (light or dark
+background via `prefers-color-scheme`), so a single URL works for everyone.
+
 ## Add to Your GitHub Profile
 
 ### Step 1: Create Your Profile Repository
@@ -76,7 +79,16 @@ Commit the changes and visit your GitHub profile. Your neofetch card will appear
 
 ## Dark/Light Mode Support
 
-GitHub users can choose dark or light themes. Use the `<picture>` element to automatically show the right theme:
+By default (`theme=auto` or no `theme` parameter), the card detects the
+viewer's theme automatically and switches the background (and text) between
+light and dark — no extra markup needed:
+
+```markdown
+![Neofetch Stats](https://neofetch-profile.vercel.app/api?username=YOUR_USERNAME)
+```
+
+If you prefer to control the themes manually, use the `<picture>` element with
+forced themes:
 
 ```html
 <a href="https://github.com/jeantimex/neofetch-profile">
@@ -120,14 +132,17 @@ When using a config URL, **URL-encode** the config parameter:
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `username` | Your GitHub username (required) | — |
-| `theme` | `github-dark` or `github-light` | `github-dark` |
+| `theme` | `auto`, `github-dark` or `github-light` | `auto` |
 | `config` | URL to a JSON config file | — |
 
 ### Examples
 
 ```
-# Basic
+# Basic (auto light/dark mode)
 https://neofetch-profile.vercel.app/api?username=jeantimex
+
+# Forced dark theme
+https://neofetch-profile.vercel.app/api?username=jeantimex&theme=github-dark
 
 # Light theme
 https://neofetch-profile.vercel.app/api?username=jeantimex&theme=github-light

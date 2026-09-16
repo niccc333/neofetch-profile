@@ -304,8 +304,11 @@ function escapeXml(str) {
     .replace(/'/g, '&apos;');
 }
 
-function generateSimpleSvg(asciiArt, theme = 'github-dark', birdStats = null) {
-  const colors = THEMES[theme] || THEMES['github-dark'];
+export function generateSimpleSvg(asciiArt, theme = 'auto', birdStats = null) {
+  const light = THEMES['github-light'];
+  const dark = THEMES['github-dark'];
+  const isAuto = !theme || theme === 'auto';
+  const colors = isAuto ? null : (THEMES[theme] || THEMES['github-dark']);
 
   // Center ascii
   const xCenter = 492;
@@ -357,21 +360,58 @@ function generateSimpleSvg(asciiArt, theme = 'github-dark', birdStats = null) {
   let svgHeight = 600;
   if (birdStats) {
     svgHeight = 750;
+    // In auto mode colors come from CSS classes; in forced mode use static fills.
+    // NB: colors is null in auto mode, so resolve the fill lazily per branch.
+    const textAttrs = isAuto ? 'class="card-text"' : `fill="${colors.text}"`;
     birdSvg = `
-<text x="${xCenter}" y="590" fill="${colors.text}" text-anchor="middle" font-size="16px" font-weight="bold">
+<text x="${xCenter}" y="590" ${textAttrs} text-anchor="middle" font-size="16px" font-weight="bold">
 ${escapeXml(birdStats.title)}
 </text>
-<text x="${xCenter}" y="615" fill="${colors.text}" text-anchor="middle" font-size="16px">
+<text x="${xCenter}" y="615" ${textAttrs} text-anchor="middle" font-size="16px">
 ${escapeXml(birdStats.stat1)}
 </text>
-<text x="${xCenter}" y="645" fill="${colors.text}" text-anchor="middle" font-size="16px">
+<text x="${xCenter}" y="645" ${textAttrs} text-anchor="middle" font-size="16px">
 ${escapeXml(birdStats.notableTitle)}
 </text>`;
     if (birdStats.rareBirds && birdStats.rareBirds.length > 0) {
       birdStats.rareBirds.forEach((bird, i) => {
-        birdSvg += `\n<text x="${xCenter}" y="${670 + (i * 20)}" fill="${colors.text}" text-anchor="middle" font-size="14px">\n${escapeXml(bird)}\n</text>`;
+        birdSvg += `\n<text x="${xCenter}" y="${670 + (i * 20)}" ${textAttrs} text-anchor="middle" font-size="14px">\n${escapeXml(bird)}\n</text>`;
       });
     }
+  }
+
+  if (isAuto) {
+    // Adaptive SVG: background + foreground follow the viewer's
+    // prefers-color-scheme, so a single URL works in both GitHub themes.
+    // Light palette is the default; dark palette applies inside the media query.
+    const svg = `<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" font-family="Consolas,Monaco,monospace" width="985px" height="${svgHeight}px" font-size="16px">
+<style>
+@font-face {
+  src: local('Consolas'), local('Monaco'), local('monospace');
+  font-family: 'CardFont';
+  font-display: swap;
+}
+text, tspan { white-space: pre; }
+.card-bg { fill: ${light.bg}; }
+.ascii-fill { fill: ${light.ascii}; }
+.card-text { fill: ${light.text}; }
+@media (prefers-color-scheme: dark) {
+  .card-bg { fill: ${dark.bg}; }
+  .ascii-fill { fill: ${dark.ascii}; }
+  .card-text { fill: ${dark.text}; }
+}
+</style>
+<rect width="985px" height="${svgHeight}px" class="card-bg" rx="15"/>
+<text x="${xCenter}" y="100" class="ascii-fill"${textAnchor}>
+${asciiLines}
+</text>
+<text x="${xCenter}" y="550" class="card-text" text-anchor="middle" font-size="20px">
+Artist: Бато Дугаржапов
+</text>${birdSvg}
+</svg>`;
+
+    return svg;
   }
 
   const svg = `<?xml version='1.0' encoding='UTF-8'?>
@@ -511,7 +551,7 @@ async function getBirdStats(apiKey) {
 
 // Vercel serverless handler
 export default async function handler(req, res) {
-  const { theme = 'github-dark' } = req.query;
+  const { theme = 'auto' } = req.query;
 
   try {
     const slideshowDir = path.join(process.cwd(), 'Slideshow');
